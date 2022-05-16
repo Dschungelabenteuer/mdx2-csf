@@ -433,6 +433,35 @@ describe('docs-mdx-compiler-plugin', () => {
     `);
   });
 
+  it('scopes.mdx', () => {
+    expect(
+      clean(dedent`
+        import { Button } from '@storybook/react/demo';
+        import { Story, Meta } from '@storybook/addon-docs';
+
+        <Meta title="Button" component={Button} scopes={['scope-a', 'scope-b']} />
+
+        <Story name="story notes" scopes={['scope-a']}>
+          <Button>Story notes</Button>
+        </Story>
+      `)
+    ).toMatchInlineSnapshot(`
+      export const storyNotes = () => <Button>{'Story notes'}</Button>;
+      storyNotes.storyName = 'story notes';
+      storyNotes.parameters = { storySource: { source: '<Button>{"Story notes"}</Button>' } };
+      storyNotes.scopes = ['scope-a'];
+
+      const componentMeta = {
+        title: 'Button',
+        scopes: ['scope-a', 'scope-b'],
+        component: Button,
+        includeStories: ['storyNotes'],
+      };
+
+      const mdxStoryNameToKey = { 'story notes': 'storyNotes' };
+    `);
+  });
+
   it('previews.mdx', () => {
     expect(
       clean(dedent`
