@@ -125,6 +125,70 @@ describe('mdx2', () => {
       const mdxStoryNameToKey = {};
     `);
   });
+
+  it('imported stories', () => {
+    const input = dedent`
+      import * as stories from './Button.stories.tsx';
+
+      # hello
+
+      <Meta title="foobar" />
+
+      world {2 + 1}
+
+      <Story story={stories.Test} />
+    `;
+    // @ts-ignore
+    expect(compileSync(input)).toMatchInlineSnapshot(`
+      /*@jsxRuntime automatic @jsxImportSource react*/
+      import { assertIsFn, AddContext } from "@storybook/addon-docs";
+      import {Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs} from "react/jsx-runtime";
+      import * as stories from './Button.stories.tsx';
+      function MDXContent(props = {}) {
+        const {wrapper: MDXLayout} = props.components || ({});
+        return MDXLayout ? _jsx(MDXLayout, Object.assign({}, props, {
+          children: _jsx(_createMdxContent, {})
+        })) : _createMdxContent();
+        function _createMdxContent() {
+          const _components = Object.assign({
+            h1: "h1",
+            p: "p"
+          }, props.components), {Meta, Story} = _components;
+          if (!Meta) _missingMdxReference("Meta", true);
+          if (!Story) _missingMdxReference("Story", true);
+          return _jsxs(_Fragment, {
+            children: [_jsx(_components.h1, {
+              children: "hello"
+            }), "\\n", _jsx(Meta, {
+              title: "foobar"
+            }), "\\n", _jsxs(_components.p, {
+              children: ["world ", 2 + 1]
+            }), "\\n", _jsx(Story, {
+              story: stories.Test,
+              name: "_Test_"
+            })]
+          });
+        }
+      }
+      function _missingMdxReference(id, component) {
+        throw new Error("Expected " + (component ? "component" : "object") + " \`" + id + "\` to be defined: you likely forgot to import, pass, or provide it.");
+      }
+      // =========
+      export const _Test_ = stories.Test;
+
+      const componentMeta = { title: 'foobar', includeStories: ["_Test_"],  };
+
+      const mdxStoryNameToKey = {"_Test_":"_Test_"};
+
+      componentMeta.parameters = componentMeta.parameters || {};
+      componentMeta.parameters.docs = {
+        ...(componentMeta.parameters.docs || {}),
+        page: () => <AddContext mdxStoryNameToKey={mdxStoryNameToKey} mdxComponentAnnotations={componentMeta}><MDXContent /></AddContext>,
+      };
+
+      export default componentMeta;
+    `);
+  });
 });
 
 describe('docs-mdx-compiler-plugin', () => {
@@ -173,12 +237,12 @@ describe('docs-mdx-compiler-plugin', () => {
       clean(dedent`
         import { Button } from '@storybook/react/demo';
         import { Story, Meta } from '@storybook/addon-docs';
-        
+
         <Meta title="Button" component={Button} id="button-id" />
-        
+
         <Story name="component notes">
           <Button>Component notes</Button>
-        </Story>        
+        </Story>
       `)
     ).toMatchInlineSnapshot(`
       export const componentNotes = () => <Button>{'Component notes'}</Button>;
@@ -203,18 +267,18 @@ describe('docs-mdx-compiler-plugin', () => {
         import { Welcome, Button } from '@storybook/angular/demo';
         import * as MyStories from './My.stories';
         import { Other } from './Other.stories';
-        
+
         <Meta title="MDX/CSF imports" />
-        
+
         # Stories from CSF imports
-        
+
         <Story story={MyStories.Basic} />
-        
+
         <Canvas>
           <Story story={Other} />
         </Canvas>
-        
-        <Story name="renamed" story={MyStories.Foo} />      
+
+        <Story name="renamed" story={MyStories.Foo} />
       `)
     ).toMatchInlineSnapshot(`
       export const _Basic_ = MyStories.Basic;
@@ -570,23 +634,23 @@ describe('docs-mdx-compiler-plugin', () => {
       clean(dedent`
         import { Button } from '@storybook/react/demo';
         import { Story, Meta } from '@storybook/addon-docs';
-        
+
         <Meta title="Button" />
-        
+
         # Story definition
-        
+
         <Story name="one">
           <Button>One</Button>
         </Story>
-        
+
         <Story name="hello story">
           <Button>Hello button</Button>
         </Story>
-        
+
         <Story name="w/punctuation">
           <Button>with punctuation</Button>
         </Story>
-        
+
         <Story name="1 fine day">
           <Button>starts with number</Button>
         </Story>
@@ -628,14 +692,14 @@ describe('docs-mdx-compiler-plugin', () => {
         import { Meta, Story } from '@storybook/addon-docs';
 
         <Meta title="story-function-var" />
-        
+
         export const basicFn = () => <Button />;
-        
+
         # Button
-        
+
         I can define a story with the function defined in CSF:
-        
-        <Story name="basic">{basicFn}</Story>      
+
+        <Story name="basic">{basicFn}</Story>
       `)
     ).toMatchInlineSnapshot(`
       export const basic = assertIsFn(basicFn);
@@ -687,9 +751,9 @@ describe('docs-mdx-compiler-plugin', () => {
         import { Story, Meta } from '@storybook/addon-docs';
 
         <Meta title="Multiple" />
-        
+
         # Multiple children
-        
+
         <Story name="multiple children">
           <p>Hello Child #1</p>
           <p>Hello Child #2</p>
@@ -720,11 +784,11 @@ describe('docs-mdx-compiler-plugin', () => {
         import { Story, Meta } from '@storybook/addon-docs';
         import { Welcome, Button } from '@storybook/angular/demo';
         import { linkTo } from '@storybook/addon-links';
-        
+
         <Meta title="MDX|Welcome" />
-        
+
         # Story object
-        
+
         <Story name="to storybook" height="300px">
           {{
             template: '<storybook-welcome-component (showApp)="showApp()"></storybook-welcome-component>',
@@ -831,7 +895,7 @@ describe('docs-mdx-compiler-plugin', () => {
 
         <Story>
           <Button>One</Button>
-        </Story>      
+        </Story>
       `)
     ).rejects.toThrow('Expected a Story name, id, or story attribute');
   });
@@ -841,9 +905,9 @@ describe('docs-mdx-compiler-plugin', () => {
       expect(
         clean(dedent`
           import { Meta } from '@storybook/addon-docs';
-  
+
           <Meta />
-  
+
           # Auto-title Docs Only
 
           Spme **markdown** here!

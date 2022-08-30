@@ -21,6 +21,7 @@ export interface Context {
   counter: number;
   namedExports: Record<string, any>;
   storyNameToKey: Record<string, string>;
+  importedStoryNames: Map<`${number}-${number}`, string>;
 }
 
 interface HastElement {
@@ -85,6 +86,7 @@ function genImportStory(
     context.storyNameToKey[storyName] = storyKey;
     statements.push(`${storyKey}.storyName = '${storyName}';`);
   } else {
+    context.importedStoryNames.set(`${ast.start}-${ast.end}`, storyKey);
     context.storyNameToKey[storyKey] = storyKey;
     ast.openingElement.attributes.push(
       t.jsxAttribute(t.jsxIdentifier('name'), t.stringLiteral(storyKey))

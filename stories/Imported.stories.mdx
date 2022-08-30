@@ -1,0 +1,19 @@
+import { Meta, Story, Canvas } from '@storybook/addon-docs';
+import * as stories from './Button.stories';
+
+<Meta title="Example/CSF Stories with MDX Docs" />
+
+## Alone:
+
+<Story story={stories.Large} />
+
+## Wrapped by Canvas:
+
+<Canvas>
+  <Story story={stories.Primary} />
+  <Story story={stories.Secondary} />
+</Canvas>
+
+## Overwrite name
+
+<Story name="Renamed" story={stories.Small} />

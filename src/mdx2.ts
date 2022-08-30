@@ -24,6 +24,7 @@ function extractExports(root: t.File, options: CompilerOptions) {
     counter: 0,
     storyNameToKey: {},
     namedExports: {},
+    importedStoryNames: new Map([]),
   };
   const storyExports = [];
   const includeStories = [];
@@ -100,17 +101,36 @@ function extractExports(root: t.File, options: CompilerOptions) {
     'export default componentMeta;',
   ].join('\n\n');
 
-  return fullJsx;
+  return { fullJsx, context };
 }
+
+export const applyImportedStoryNames = (
+  visit: any,
+  root: any,
+  importedStoryNames: Context['importedStoryNames']
+) => {
+  visit(root, 'mdxJsxFlowElement', (node: any) => {
+    const { name, position } = node;
+    const value = importedStoryNames.get(`${position.start.offset}-${position.end.offset}`);
+    if (name === 'Story' && value) {
+      node.attributes.push({
+        type: 'mdxJsxAttribute',
+        name: 'name',
+        value,
+      });
+    }
+  });
+  return root;
+};
 
 export const plugin = (store: any) => (root: any) => {
   const estree = store.toEstree(root);
   // toBabel mutates root, so we need to clone it
   const clone = cloneDeep(estree);
   const babel = toBabel(clone);
-  store.exports = extractExports(babel, {});
-
-  return root;
+  const { context, fullJsx } = extractExports(babel, {});
+  store.exports = fullJsx;
+  return store.transformRoot(root, context);
 };
 
 export const postprocess = (code: string, extractedExports: string) => {
@@ -131,8 +151,12 @@ export const postprocess = (code: string, extractedExports: string) => {
 export const mdxSync = (code: string) => {
   const { compileSync } = require('@mdx-js/mdx');
   const { toEstree } = require('hast-util-to-estree');
+  const { visit } = require('unist-util-visit');
+  const transformRoot = (root: any, context: Context) => {
+    applyImportedStoryNames(visit, root, context.importedStoryNames);
+  };
 
-  const store = { exports: '', toEstree };
+  const store = { exports: '', toEstree, transformRoot };
   const output = compileSync(code, {
     rehypePlugins: [[plugin, store]],
   });

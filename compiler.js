@@ -1,4 +1,4 @@
-const { plugin, postprocess } = require('./dist/cjs');
+const { plugin, postprocess, applyImportedStoryNames } = require('./dist/cjs');
 
 const compileAsync = async (code, { skipCsf }) => {
   // This async import is needed because these libraries are ESM
@@ -7,8 +7,12 @@ const compileAsync = async (code, { skipCsf }) => {
   // statements when it transpiles...
   const { compile } = await import('@mdx-js/mdx');
   const { toEstree } = await import('hast-util-to-estree');
+  const { visit } = await import('unist-util-visit');
+  const transformRoot = (root, context) => {
+    applyImportedStoryNames(visit, root, context.importedStoryNames);
+  };
 
-  const store = { exports: '', toEstree };
+  const store = { exports: '', toEstree, transformRoot };
   const rehypePlugins = skipCsf ? undefined : [[plugin, store]];
   const output = await compile(code, {
     rehypePlugins,
